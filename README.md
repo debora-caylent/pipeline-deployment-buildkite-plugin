@@ -1,25 +1,37 @@
-# pipeline-deployment-buildkite-plugin
-Build + deploy ecs services
+# File Counter Buildkite Plugin
 
-# Step 1: Create a new git repository
-# Step 2: Add a plugin.yml
+Annotates the build with a file count.
+
+## Example
+
+Add the following to your `pipeline.yml`:
+
+```yml
+steps:
+  - command: ls
+    plugins:
+      - a-github-user/file-counter#v1.0.0:
+          pattern: '*.md'
 ```
-name: File Counter
-description: Annotates the build with a file count
-author: https://github.com/a-github-user
-requirements: []
-configuration:
-  properties:
-    pattern:
-      type: string
-  additionalProperties: false
+
+## Configuration
+
+### `pattern` (Required, string)
+
+The file name pattern, for example `*.ts`. Supports any pattern supported by [find -name](http://man7.org/linux/man-pages/man1/find.1.html).
+
+## Developing
+
+To run the tests:
+
+```shell
+docker-compose run --rm tests
 ```
-## Valid plugin.yml properties
-Property	Description
-name	The name of the plugin, in Title Case.
-description	A short sentence describing what the plugin does.
-author	A URL to the plugin author (for example, website or GitHub profile).
-requirements	An array of commands that are expected to exist in the agent's $PATH.
-configuration	A JSON Schema describing the valid configuration options available.
-# Step 3: Validate the plugin.yml
-`docker-compose run --rm lint`
+
+## Contributing
+
+1. Fork the repo
+2. Make the changes
+3. Run the tests
+4. Commit and push your changes
+5. Send a pull request
