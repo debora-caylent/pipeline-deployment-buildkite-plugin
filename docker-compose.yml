@@ -1,0 +1,6 @@
+services:
+  lint:
+    image: buildkite/plugin-linter
+    command: ['--id', 'debora-caylent/pipeline-deployment']
+    volumes:
+      - ".:/plugin:ro"
