@@ -93,8 +93,8 @@ update_services_annotation() {
 
 get_account_id() {
     # Matches an account ID to a Terraform workspace name
-    ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
-    case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN in
+    ! [[ "$1" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
+    case $1 in
         prod) echo 882543450159;;
         stage) echo 614360038354;;
         dev) echo 416555808981;;
@@ -110,8 +110,8 @@ get_account_id() {
 
 get_account_hostname() {
     # Matches a hostname to a Terraform workspace name
-    ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
-    case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN in
+    ! [[ "$1" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
+    case $1 in
         prod) echo negotiatus.com;;
         stage) echo staging.negotiatus.com;;
         dev) echo development.negotiatus.com;;
