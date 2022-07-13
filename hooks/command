@@ -1,27 +1,25 @@
 #!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+source $SCRIPT_DIR/common.sh
+
+set -e
+
 WORKSPACE="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN"
-echo "BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN: $WORKSPACE"
+CLUSTER="$APPLICATION-$WORKSPACE"
+ACCOUNT_ID=`get_account_id $WORKSPACE` || (echo "$ACCOUNT_ID" && exit 1)
 
-# SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+if [[ "$2" ]]; then
+    AWS_PROFILE="$2"
+    echo "--- :aws-iam: Using profile '$AWS_PROFILE'"
+else
+    echo "--- :aws-iam: Assuming BuildkiteDeploy role on $WORKSPACE ($ACCOUNT_ID)"
+    AWS_PROFILE=`aws_assume_role BuildkiteDeploy $ACCOUNT_ID` || (echo "$AWS_PROFILE" && exit 1)
+fi
 
-# source $SCRIPT_DIR/common.sh
+echo "--- :ecs: Getting ECS service list for '$CLUSTER'"
+SERVICES=`list_ecs_services $CLUSTER` || (echo "$SERVICES" && exit 1)
 
-# set -e
-
-# WORKSPACE="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN"
-# CLUSTER="$APPLICATION-$WORKSPACE"
-# ACCOUNT_ID=`get_account_id $WORKSPACE` || (echo "$ACCOUNT_ID" && exit 1)
-
-# if [[ "$2" ]]; then
-#     AWS_PROFILE="$2"
-#     echo "--- :aws-iam: Using profile '$AWS_PROFILE'"
-# else
-#     echo "--- :aws-iam: Assuming BuildkiteDeploy role on $WORKSPACE ($ACCOUNT_ID)"
-#     AWS_PROFILE=`aws_assume_role BuildkiteDeploy $ACCOUNT_ID` || (echo "$AWS_PROFILE" && exit 1)
-# fi
-
-# echo "--- :ecs: Getting ECS service list for '$CLUSTER'"
-# SERVICES=`list_ecs_services $CLUSTER` || (echo "$SERVICES" && exit 1)
-
-# echo "Found `echo \"$SERVICES\" | wc -w | awk '{print $1}'` services:"
-# echo "$SERVICES" | tr '\t' '\n'
+echo "Found `echo \"$SERVICES\" | wc -w | awk '{print $1}'` services:"
+echo "$SERVICES" | tr '\t' '\n'
