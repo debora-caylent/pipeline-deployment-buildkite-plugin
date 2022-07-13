@@ -92,6 +92,7 @@ update_services_annotation() {
 ### AWS Functions ###
 
 get_account_id() {
+    echo "workspace: $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
     # Matches an account ID to a Terraform workspace name
     ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
     case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE in
