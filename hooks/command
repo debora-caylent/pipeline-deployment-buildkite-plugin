@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-PATTERN="$BUILDKITE_PLUGIN_FILE_COUNTER_PATTERN"
+PATTERN="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN"
 
 echo "--- :1234: Counting the number of files"
 
