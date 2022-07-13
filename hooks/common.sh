@@ -23,21 +23,21 @@ kebab_case() {
 }
 
 json_encode_string_list() {
-    local groups="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
+    local groups="$1"
     jq -c -n --arg groups "$groups" '$groups | split(" ")'
 }
 
 ### Buildkite Functions ###
 
 render_task_status() {
-    local cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" task_name="$2" task_id="$3" task_command="$4" status="$5"
+    local cluster="$1" task_name="$2" task_id="$3" task_command="$4" status="$5"
     cat <<-EOF
 <a href="https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/$cluster/tasks/$task_id/details">$task_name ($task_id)</a> <code>$task_command</code> - $status
 EOF
 }
 
 render_services_status_row() {
-    local cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" service="$2" last_events="$3" status="$4"
+    local cluster="$1" service="$2" last_events="$3" status="$4"
     cat <<-EOF
     <tr>
         <td>$status</td>
@@ -57,7 +57,7 @@ EOF
 }
 
 render_services_status_annotation() {
-    local cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" rows="$2"
+    local cluster="$1" rows="$2"
 cat <<-EOF
 <h3><a href="https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/$cluster/services">$cluster</a> services</h3>
 <table>
@@ -71,7 +71,7 @@ EOF
 }
 
 update_services_annotation() {
-    local services_info="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" service_names status style service_cluster service_info services_status_rows
+    local services_info="$1" service_names status style service_cluster service_info services_status_rows
     service_names=`echo "$services_info" | jq -r ".services[].serviceName"`
     style="success"
     services_status_rows=""
@@ -92,10 +92,9 @@ update_services_annotation() {
 ### AWS Functions ###
 
 get_account_id() {
-    echo "workspace: $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
     # Matches an account ID to a Terraform workspace name
-    ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
-    case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE in
+    ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
+    case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN in
         prod) echo 882543450159;;
         stage) echo 614360038354;;
         dev) echo 416555808981;;
@@ -103,7 +102,7 @@ get_account_id() {
         test) echo 651021819035;;
         sandbox) echo 207628655394;;
         *)
-            echo "ERROR: '$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE' is not a valid Terraform workspace (must be one of prod, stage, dev, test, sandbox, or tools)"
+            echo "ERROR: '$1' is not a valid Terraform workspace (must be one of prod, stage, dev, test, sandbox, or tools)"
             return 1
         ;;
     esac
@@ -111,8 +110,8 @@ get_account_id() {
 
 get_account_hostname() {
     # Matches a hostname to a Terraform workspace name
-    ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
-    case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE in
+    ! [[ "$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
+    case $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN in
         prod) echo negotiatus.com;;
         stage) echo staging.negotiatus.com;;
         dev) echo development.negotiatus.com;;
@@ -120,7 +119,7 @@ get_account_hostname() {
         test) echo testing.negotiatus.com;;
         sandbox) echo sandbox.negotiatus.com;;
         *)
-            echo "ERROR: '$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE' is not a valid Terraform workspace (must be one of prod, stage, dev, test, sandbox, or tools)"
+            echo "ERROR: '$1' is not a valid Terraform workspace (must be one of prod, stage, dev, test, sandbox, or tools)"
             return 1
         ;;
     esac
@@ -128,7 +127,7 @@ get_account_hostname() {
 
 aws_assume_role() {
     # Assumes a role on a given AWS account and returns the profile name you can use to call the AWS CLI
-    local tmp_file="`mktemp`" role_name=$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE account_id=$2 profile=$3
+    local tmp_file="`mktemp`" role_name=$1 account_id=$2 profile=$3
     [[ "$profile" ]] && profile="--profile $3"
     local EXTRA_ARGS="$@"
     local profile="$role_name$account_id" \
@@ -155,7 +154,7 @@ aws_assume_role() {
 
 start_ecs_task() {
     # Starts a ECS task using the specified task definition on a given cluster
-    local tmp_file="`mktemp`" cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" task_definition="$2" network_configuration="$3" container_overrides="$4" tags="$5"
+    local tmp_file="`mktemp`" cluster="$1" task_definition="$2" network_configuration="$3" container_overrides="$4" tags="$5"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$6" ]] && profile="$6"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -175,7 +174,7 @@ start_ecs_task() {
 
 get_ecs_tasks_info() {
     # Gets the tasks info based on the cluster and service names
-    local tmp_file="`mktemp`" cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" service="$2" 
+    local tmp_file="`mktemp`" cluster="$1" service="$2" 
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$3" ]] && profile="$3"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -188,7 +187,7 @@ get_ecs_tasks_info() {
 }
 
 get_logs() {
-    local tmp_file="`mktemp`" log_group="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" log_stream="$2" next_log_token="$3" next_log_arg
+    local tmp_file="`mktemp`" log_group="$1" log_stream="$2" next_log_token="$3" next_log_arg
     [[ "$next_log_token" ]] && next_log_arg="--next-token $next_log_token"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$4" ]] && profile="$4"
@@ -204,7 +203,7 @@ get_logs() {
 
 list_ecs_services() {
     # Lists ECS Services on a specific cluster
-    local tmp_file="`mktemp`" cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
+    local tmp_file="`mktemp`" cluster="$1"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$2" ]] && profile="$2"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -218,7 +217,7 @@ list_ecs_services() {
 }
 
 get_ecs_task_info() {
-    local tmp_file="`mktemp`" cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" task_arn="$2"
+    local tmp_file="`mktemp`" cluster="$1" task_arn="$2"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$3" ]] && profile="$3"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -232,7 +231,7 @@ get_ecs_task_info() {
 
 get_ecs_services_info() {
     # Gets the status of services on a specific ECS cluster and updates the Buildkite 'services' annotation
-    local tmp_file="`mktemp`" cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" services="$2"
+    local tmp_file="`mktemp`" cluster="$1" services="$2"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$3" ]] && profile="$3"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -245,7 +244,7 @@ get_ecs_services_info() {
 }
 
 get_ecs_service_status() {
-    local service_info="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" deployment_count desired_count running_count
+    local service_info="$1" deployment_count desired_count running_count
     deployment_count=`echo "$service_info" | jq ".deployments | length"`
     desired_count=`echo "$service_info" | jq ".deployments[].desiredCount"`
     running_count=`echo "$service_info" | jq ".deployments[].runningCount"`
@@ -262,7 +261,7 @@ get_ecs_service_status() {
 
 wait_for_ecs_services_to_be_healthy() {
     # Takes a list of ECS Services and waits for all of them to be healthy
-    local cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" services=$2 start_time="`date +%s`"
+    local cluster="$1" services=$2 start_time="`date +%s`"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$3" ]] && profile="$3"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -286,7 +285,7 @@ wait_for_ecs_services_to_be_healthy() {
 }
 
 update_ecs_service() {
-    local tmp_file=`mktemp` cluster="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" services=$2
+    local tmp_file=`mktemp` cluster="$1" services=$2
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$3" ]] && profile="$3"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -300,7 +299,7 @@ update_ecs_service() {
 
 get_ecr_manifest() {
     # Gets a manifest hash for an ECR image given a repo and tag
-    local tmp_file="`mktemp`" ecr_repo_name="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE" ecr_tag="$2" mode="${3:-error_if_not_found}"
+    local tmp_file="`mktemp`" ecr_repo_name="$1" ecr_tag="$2" mode="${3:-error_if_not_found}"
     aws ecr batch-get-image --repository-name $ecr_repo_name \
                             --image-ids imageTag=$ecr_tag \
                             --query 'images[].imageManifest' \
@@ -314,7 +313,7 @@ get_ecr_manifest() {
 
 get_ec2_instance_info_by_name() {
     # Gets info about a given EC2 instance given a 'Name' tag value
-    local tmp_file="`mktemp`" name="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
+    local tmp_file="`mktemp`" name="$1"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$2" ]] && profile="$2"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -329,7 +328,7 @@ get_ec2_instance_info_by_name() {
 
 get_subnets() {
     # Get a list of subnets by Name tag (supports wildcard values in name filter)
-    local tmp_file="`mktemp`" name="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
+    local tmp_file="`mktemp`" name="$1"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$2" ]] && profile="$2"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
@@ -344,7 +343,7 @@ get_subnets() {
 
 get_security_groups() {
     # Get a list of security groups by group-name (supports wildcard values in name filter)
-    local tmp_file="`mktemp`" name="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
+    local tmp_file="`mktemp`" name="$1"
     [[ "$AWS_PROFILE" ]] && profile="$AWS_PROFILE"
     [[ "$2" ]] && profile="$2"
     [[ -z "$profile" ]] && echo "Must either set AWS_PROFILE or pass a profile name" && return 1
