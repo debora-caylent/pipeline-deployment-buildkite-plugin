@@ -8,7 +8,7 @@ set -e
 
 WORKSPACE="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE"
 CLUSTER="$APPLICATION-$WORKSPACE"
-ACCOUNT_ID=`get_account_id $BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_WORKSPACE` || (echo "$ACCOUNT_ID" && exit 1)
+ACCOUNT_ID=`get_account_id $WORKSPACE` || (echo "$ACCOUNT_ID" && exit 1)
 
 echo "--- :aws-iam: Assuming BuildkiteDeploy role on $WORKSPACE ($ACCOUNT_ID)"
 AWS_PROFILE=`aws_assume_role BuildkiteDeploy $ACCOUNT_ID` || (echo "$AWS_PROFILE" && exit 1)
