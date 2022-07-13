@@ -1,12 +1,25 @@
 #!/bin/bash
-set -euo pipefail
 
-PATTERN="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-echo "--- :1234: Counting the number of files"
+source $SCRIPT_DIR/common.sh
 
-COUNT=$(find . -name "$PATTERN" | wc -l)
+set -e
 
-echo "Found ${COUNT} files matching ${PATTERN}"
+WORKSPACE="$1"
+CLUSTER="$APPLICATION-$WORKSPACE"
+ACCOUNT_ID=`get_account_id $1` || (echo "$ACCOUNT_ID" && exit 1)
 
-buildkite-agent annotate "Found ${COUNT} files matching ${PATTERN}"
+if [[ "$2" ]]; then
+    AWS_PROFILE="$2"
+    echo "--- :aws-iam: Using profile '$AWS_PROFILE'"
+else
+    echo "--- :aws-iam: Assuming BuildkiteDeploy role on $WORKSPACE ($ACCOUNT_ID)"
+    AWS_PROFILE=`aws_assume_role BuildkiteDeploy $ACCOUNT_ID` || (echo "$AWS_PROFILE" && exit 1)
+fi
+
+echo "--- :ecs: Getting ECS service list for '$CLUSTER'"
+SERVICES=`list_ecs_services $CLUSTER` || (echo "$SERVICES" && exit 1)
+
+echo "Found `echo \"$SERVICES\" | wc -w | awk '{print $1}'` services:"
+echo "$SERVICES" | tr '\t' '\n'

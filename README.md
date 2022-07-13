@@ -1,4 +1,4 @@
-# File Counter Buildkite Plugin
+# ECS task update Buildkite Plugin
 
 Annotates the build with a file count.
 
