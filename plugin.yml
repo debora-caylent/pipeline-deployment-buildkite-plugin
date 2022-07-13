@@ -4,6 +4,6 @@ author: https://github.com/debora-caylent
 requirements: []
 configuration:
   properties:
-    pattern:
+    workspace:
       type: string
   additionalProperties: false
