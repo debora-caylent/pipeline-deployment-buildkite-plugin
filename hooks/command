@@ -10,6 +10,11 @@ WORKSPACE="$BUILDKITE_PLUGIN_PIPELINE_DEPLOYMENT_PATTERN"
 CLUSTER="$APPLICATION-$WORKSPACE"
 ACCOUNT_ID=`get_account_id $WORKSPACE` || (echo "$ACCOUNT_ID" && exit 1)
 
+echo "-----"
+echo "$ACCOUNT_ID"
+echo "$WORKSPACE"
+echo "$2"
+
 if [[ "$2" ]]; then
     AWS_PROFILE="$2"
     echo "--- :aws-iam: Using profile '$AWS_PROFILE'"
