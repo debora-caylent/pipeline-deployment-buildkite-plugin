@@ -6,4 +6,6 @@ configuration:
   properties:
     workspace:
       type: string
+    account_id:
+      type: string
   additionalProperties: false

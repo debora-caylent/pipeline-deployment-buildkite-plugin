@@ -90,41 +90,6 @@ update_services_annotation() {
 }
 
 ### AWS Functions ###
-
-get_account_id() {
-    # Matches an account ID to a Terraform workspace name
-    ! [[ "$1" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
-    case $1 in
-        prod) echo 882543450159;;
-        stage) echo 614360038354;;
-        dev) echo 416555808981;;
-        tools) echo 247896140244;;
-        test) echo 651021819035;;
-        sandbox) echo 207628655394;;
-        *)
-            echo "ERROR: '$1' is not a valid Terraform workspace (must be one of prod, stage, dev, test, sandbox, or tools)"
-            return 1
-        ;;
-    esac
-}
-
-get_account_hostname() {
-    # Matches a hostname to a Terraform workspace name
-    ! [[ "$1" ]] && echo "ERROR: Must pass in a Terraform workspace" && return 1
-    case $1 in
-        prod) echo negotiatus.com;;
-        stage) echo staging.negotiatus.com;;
-        dev) echo development.negotiatus.com;;
-        tools) echo tools.negotiatus.com;;
-        test) echo testing.negotiatus.com;;
-        sandbox) echo sandbox.negotiatus.com;;
-        *)
-            echo "ERROR: '$1' is not a valid Terraform workspace (must be one of prod, stage, dev, test, sandbox, or tools)"
-            return 1
-        ;;
-    esac
-}
-
 aws_assume_role() {
     # Assumes a role on a given AWS account and returns the profile name you can use to call the AWS CLI
     local tmp_file="`mktemp`" role_name=$1 account_id=$2 profile=$3
